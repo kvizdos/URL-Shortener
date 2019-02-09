@@ -60,7 +60,7 @@ async function createPath(newUrl, p) {
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
-            var myobj = { url: newUrl, path: p, clicks: [] };
+            var myobj = { url: newUrl, path: p, clicks: [], referrals: [] };
             dbo.collection(config.linksCollection).insertOne(myobj, function(err, res) {
                 if (err) {
                     throw err;
@@ -76,12 +76,14 @@ async function createPath(newUrl, p) {
 async function clickUrl(path, req = []) {
     return new Promise((resolve, reject) => {
         var clickTime = new Date();
+        var ref = req.get("Referer") !== undefined ? req.get("Referer") : "http://Unknown URL";
+
         clickTime = clickTime.getFullYear() + "-" + clickTime.getDate() + "-" + (clickTime.getMonth() + 1);
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
             var findobj = { path: path };
-            dbo.collection(config.linksCollection).updateOne({path: path}, {$push: {clicks: clickTime}}, function(err, res) {
+            dbo.collection(config.linksCollection).updateOne({path: path}, {$push: {clicks: clickTime, referrals: ref}}, function(err, res) {
                 if (err) {
                     throw err;
                 } else {
@@ -306,10 +308,16 @@ app.get('/api/list', (req, res) => {
     findLinks().then((resp) => {
         for(let i = 0; i < resp.length; i++) {
             var clicks = resp[i]['clicks'];
+            var allrefs = resp[i]["referrals"];
             var clickCount = clicks.length;
             var detailedClicks = [];
+            var refs = [];
 
             var setDates = [];
+            var setRefs = [];
+
+            var addPaths = [];
+
             detailedClicks = clicks.map((element) => {
                 if(setDates.indexOf(element) == -1) {
                     setDates.push(element)
@@ -325,9 +333,35 @@ app.get('/api/list', (req, res) => {
                     return false;
                 }
             });
+
+            refs = allrefs.map((element) => {
+                var fullUrl = element;
+                var hostname = element.split('/')[2];
+
+                if(setRefs.indexOf(hostname) == -1) {
+                    setRefs.push(hostname)
+                    return {url: hostname, count: getAllIndexes(allrefs, element).length, paths: [fullUrl]};
+
+                } else {
+                    return {hostname: hostname, fullUrl: fullUrl};
+                }
+            }).filter((element) => {
+                if(element['hostname'] == undefined) {
+                    return element;
+                } else {
+                    addPaths.push(element);
+                    return false;
+                }
+            });
+
+            for(var x = 0; x < addPaths.length; x++) {
+                refs[setRefs.indexOf(addPaths[x]['hostname'])]['paths'].push(addPaths[x]['fullUrl']);
+            }
             
             resp[i]['clicks'] = clicks.length;
             resp[i]['detailedClicks'] = detailedClicks;
+
+            resp[i]["referrals"] = refs;
         }
         res.json(resp);
     })
@@ -346,7 +380,10 @@ app.get('/:path?', (req, res) => {
     if(path == 'login') {
         res.sendFile('public/login.html' , { root : __dirname});
     }
-    if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "") {
+    if(path == 'test') {
+        res.sendFile('public/test.html' , { root : __dirname});
+    }
+    if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "test" && path !== "") {
         checkPath(path).then((resp) => {
             if(resp['url'] !== undefined) {
                 clickUrl(path, req);

@@ -41,6 +41,20 @@
             #modalId {
                 display: none;
             }
+
+            .list-group{
+                max-height: 300px;
+                margin-bottom: 10px;
+                overflow:scroll;
+            }
+            ::-webkit-scrollbar {
+                width: 0px;  /* remove scrollbar space */
+                background: transparent;  /* optional: just make scrollbar invisible */
+            }
+            /* optional: show position indicator in red */
+            ::-webkit-scrollbar-thumb {
+                background: #FF0000;
+            }
         </style>
     
     </head>
@@ -122,8 +136,8 @@
                 <canvas  id="clickChart"></canvas>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveChanges()">Save changes</button>
+                <button class='btn btn-danger' id='deleteBtn' onclick=''>Delete</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
         </div>

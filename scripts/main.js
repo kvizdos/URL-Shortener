@@ -229,17 +229,55 @@ const capitalize = (s) => {
   }
 
 function setData(dp) {
+    /*
+    <ul class="list-group">
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Cras justo odio
+        <span class="badge badge-primary badge-pill">14</span>
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Dapibus ac facilisis in
+        <span class="badge badge-primary badge-pill">2</span>
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Morbi leo risus
+        <span class="badge badge-primary badge-pill">1</span>
+    </li>
+    </ul>
+    */
+
+    var refs = '<ul class="list-group">';
+
+    if(allLinks[dp]['referrals'].length > 0) {
+        for(var i = 0; i < allLinks[dp]['referrals'].length; i++) {
+            refs += '<li class="list-group-item d-flex justify-content-between align-items-center">\
+                        '+allLinks[dp]['referrals'][i]['url']+'\
+                        <span class="badge badge-primary badge-pill">'+allLinks[dp]['referrals'][i]['count']+'</span>\
+                    </li>'
+        }
+    } else {
+        refs += '<li class="list-group-item d-flex justify-content-between align-items-center">\
+                    No Links Tracked\
+                </li>'
+    }
+    refs += '</ul>';
+
     $('#modalLabel').html("<strong id='modalLinkName'>" + allLinks[dp]['path'] + "</strong>'s information");
-    $('#modalBody').html(
-        "<h3>Information<span id='modalId'>"+dp+"</span>:</h3>\
+    $('#modalBody').html("<h3>Points to: </h3><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+allLinks[dp]['url']+"' id='modifyShortUrl'>\
         <br>\
-        <strong>Points to: </strong><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+allLinks[dp]['url']+"' id='modifyShortUrl'>\
-        <br>\
-        <span><strong>Clicks:</strong> " + allLinks[dp]['clicks'] + "</span>\
+        <button type='button' class='btn btn-primary' id='saveBtn' onclick='saveChanges()'>Save changes</button>\
+        <br><br>\
+        <h3>Clicks: " + allLinks[dp]['clicks'] + "</h3>\
         <br>\
         <canvas id='clickChart'></canvas>\
-        <br><br>\
-        <button class='btn btn-danger' id='deleteBtn' onclick='deleteLink("+dp+")'>Delete</button>")
+        <br>\
+        <h3>Referrals:</h3>\
+        "+refs+"\
+        <span id='modalId'>"+dp+"</span>")
+    
+        $("#deleteBtn").click(function(){ deleteLink(dp); });
+
+
     var ctx = document.getElementById("clickChart").getContext("2d");
     var labels = [];
     var data = [];
