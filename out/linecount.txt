@@ -1,0 +1,23 @@
+===============================================================================
+EXTENSION NAME : linecount
+EXTENSION VERSION : 0.1.7
+-------------------------------------------------------------------------------
+count time : 2019-02-09 15:42:41
+count workspace : e:\Kenton Vizdos\Documents\URLShorty
+total files : 11
+total code lines : 1816
+total comment lines : 73
+total blank lines : 107
+
+config.js, code is 8, comment is 1, blank is 4.
+index.js, code is 341, comment is 10, blank is 50.
+package-lock.json, code is 1003, comment is 0, blank is 0.
+package.json, code is 18, comment is 0, blank is 0.
+public\index.html, code is 130, comment is 1, blank is 15.
+public\login.html, code is 40, comment is 0, blank is 3.
+public\test.html, code is 1, comment is 0, blank is 0.
+README.md, it is a binary file.
+scripts\login.js, code is 30, comment is 0, blank is 1.
+scripts\logo.gif, it is a binary file.
+scripts\main.js, code is 245, comment is 61, blank is 34.
+===============================================================================

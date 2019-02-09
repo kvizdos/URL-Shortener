@@ -1,0 +1,85 @@
+{
+    "extension": "linecount",
+    "version": "0.1.7",
+    "workspace": "e:\\Kenton Vizdos\\Documents\\URLShorty",
+    "linecount": [
+        {
+            "version": "0.1.7",
+            "counttime": "2019-02-09 15:42:41",
+            "filesum": 11,
+            "codesum": 1816,
+            "commentsum": 73,
+            "blanksum": 107,
+            "filelist": [
+                {
+                    "blank": 4,
+                    "code": 8,
+                    "comment": 1,
+                    "filename": "config.js"
+                },
+                {
+                    "blank": 50,
+                    "code": 341,
+                    "comment": 10,
+                    "filename": "index.js"
+                },
+                {
+                    "blank": 0,
+                    "code": 1003,
+                    "comment": 0,
+                    "filename": "package-lock.json"
+                },
+                {
+                    "blank": 0,
+                    "code": 18,
+                    "comment": 0,
+                    "filename": "package.json"
+                },
+                {
+                    "blank": 15,
+                    "code": 130,
+                    "comment": 1,
+                    "filename": "public\\index.html"
+                },
+                {
+                    "blank": 3,
+                    "code": 40,
+                    "comment": 0,
+                    "filename": "public\\login.html"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "public\\test.html"
+                },
+                {
+                    "filename": "README.md",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 1,
+                    "code": 30,
+                    "comment": 0,
+                    "filename": "scripts\\login.js"
+                },
+                {
+                    "filename": "scripts\\logo.gif",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 34,
+                    "code": 245,
+                    "comment": 61,
+                    "filename": "scripts\\main.js"
+                }
+            ]
+        }
+    ]
+}
