@@ -60,7 +60,7 @@ async function createPath(newUrl, p) {
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
-            var myobj = { url: newUrl, path: p, clicks: 0 };
+            var myobj = { url: newUrl, path: p, clicks: [] };
             dbo.collection(config.linksCollection).insertOne(myobj, function(err, res) {
                 if (err) {
                     throw err;
@@ -73,13 +73,15 @@ async function createPath(newUrl, p) {
     });
 }
 
-async function clickUrl(path) {
+async function clickUrl(path, req = []) {
     return new Promise((resolve, reject) => {
+        var clickTime = new Date();
+        clickTime = clickTime.getFullYear() + "-" + clickTime.getDate() + "-" + (clickTime.getMonth() + 1);
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
             var findobj = { path: path };
-            dbo.collection(config.linksCollection).updateOne(findobj, {$inc: {clicks: 1}}, function(err, res) {
+            dbo.collection(config.linksCollection).updateOne({path: path}, {$push: {clicks: clickTime}}, function(err, res) {
                 if (err) {
                     throw err;
                 } else {
@@ -245,8 +247,9 @@ app.post('/api/create', (req, res) => {
 app.post('/api/click', (req, res) => {
     var url = req.body['url'].split("/")[req.body['url'].split("/").length - 1];
     res.end(JSON.stringify({status: "done"}));
-    
-    clickUrl(url)
+    console.log(req.socket.remoteAddress);
+
+    clickUrl(url, req);
 })
 
 
@@ -291,8 +294,41 @@ app.post('/api/update', (req, res) => {
     });
 })
 
+function getAllIndexes(arr, val) {
+    var indexes = [], i = -1;
+    while ((i = arr.indexOf(val, i+1)) != -1){
+        indexes.push(i);
+    }
+    return indexes;
+}
+
 app.get('/api/list', (req, res) => {
     findLinks().then((resp) => {
+        for(let i = 0; i < resp.length; i++) {
+            var clicks = resp[i]['clicks'];
+            var clickCount = clicks.length;
+            var detailedClicks = [];
+
+            var setDates = [];
+            detailedClicks = clicks.map((element) => {
+                if(setDates.indexOf(element) == -1) {
+                    setDates.push(element)
+                    return {date: element, count: getAllIndexes(clicks, element).length};
+
+                } else {
+                    return false;
+                }
+            }).filter((element) => {
+                if(element !== false) {
+                    return element;
+                } else {
+                    return false;
+                }
+            });
+            
+            resp[i]['clicks'] = clicks.length;
+            resp[i]['detailedClicks'] = detailedClicks;
+        }
         res.json(resp);
     })
 });
@@ -313,7 +349,7 @@ app.get('/:path?', (req, res) => {
     if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "") {
         checkPath(path).then((resp) => {
             if(resp['url'] !== undefined) {
-                clickUrl(path);
+                clickUrl(path, req);
                 res.redirect(resp['url']);
             } else {
                 res.redirect('/login');
@@ -323,4 +359,4 @@ app.get('/:path?', (req, res) => {
         
 });
 
-app.listen(3030, () => console.log('Example app listening on port 3030!'))
+app.listen(3030, '127.0.0.1')

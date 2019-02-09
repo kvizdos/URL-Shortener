@@ -61,7 +61,55 @@ $(document).ready(function() {
 
             localStorage.setItem("links", JSON.stringify(allLinks));
         }
-    })
+    });
+
+    
+
+/*
+var ctx = document.getElementById("clickChart").getContext("2d");
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [new Date("2015-3-15 13:3").toLocaleString(), new Date("2015-3-25 13:2").toLocaleString(), new Date("2015-4-25 14:12").toLocaleString()],
+      datasets: [{
+        label: 'Demo',
+        data: [{
+            t: new Date("2015-3-15 13:3"),
+            y: 12
+          },
+          {
+            t: new Date("2015-3-25 13:2"),
+            y: 21
+          },
+          {
+            t: new Date("2015-4-25 14:12"),
+            y: 32
+          }
+        ],
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.2)',
+          'rgba(54, 162, 235, 0.2)',
+          'rgba(255, 206, 86, 0.2)',
+          'rgba(75, 192, 192, 0.2)',
+          'rgba(153, 102, 255, 0.2)',
+          'rgba(255, 159, 64, 0.2)'
+        ],
+        borderColor: [
+          'rgba(255,99,132,1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+        ],
+        borderWidth: 1
+      }]
+    }
+  });
+
+  
+  $("#exampleModal").modal('toggle');
+  */
 });
 
 function setTable(links) {
@@ -172,7 +220,61 @@ const capitalize = (s) => {
 
 function setData(dp) {
     $('#modalLabel').html("<strong id='modalLinkName'>" + allLinks[dp]['path'] + "</strong>'s information");
-    $('#modalBody').html("<h3>Information <span id='modalId'>"+dp+"</span>:</h3><strong>Clicks:</strong> " + allLinks[dp]['clicks'] + "<br><strong>Points to: </strong><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+allLinks[dp]['url']+"' id='modifyShortUrl'><br><br><button class='btn btn-danger' id='deleteBtn' onclick='deleteLink("+dp+")'>Delete</button>")
+    $('#modalBody').html(
+        "<h3>Information<span id='modalId'>"+dp+"</span>:</h3>\
+        <br>\
+        <strong>Points to: </strong><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+allLinks[dp]['url']+"' id='modifyShortUrl'>\
+        <br>\
+        <span><strong>Clicks:</strong> " + allLinks[dp]['clicks'] + "</span>\
+        <br>\
+        <canvas id='clickChart'></canvas>\
+        <br><br>\
+        <button class='btn btn-danger' id='deleteBtn' onclick='deleteLink("+dp+")'>Delete</button>")
+    var ctx = document.getElementById("clickChart").getContext("2d");
+    var labels = [];
+    var data = [];
+    var clicks = JSON.parse(localStorage.getItem('links'));
+        console.log("going")
+        data = clicks.map((element) => {
+            if(element['detailedClicks'] !== undefined) {
+                return element['detailedClicks'].map((detailed) => {
+                    console.log(detailed);
+                    labels.push(new Date(detailed['date']).toLocaleString());
+            
+                    return {t: new Date(detailed['date']).toLocaleString(), y: detailed['count']};
+                })
+            }
+        })
+        console.log(data);
+        console.log(labels);
+    
+    var clickChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Daily Clicks',
+            data: data[0],
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.2)',
+              'rgba(54, 162, 235, 0.2)',
+              'rgba(255, 206, 86, 0.2)',
+              'rgba(75, 192, 192, 0.2)',
+              'rgba(153, 102, 255, 0.2)',
+              'rgba(255, 159, 64, 0.2)'
+            ],
+            borderColor: [
+              'rgba(255,99,132,1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(75, 192, 192, 1)',
+              'rgba(153, 102, 255, 1)',
+              'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+          }]
+        }
+      });
 }
 
 function navigate(to) {
