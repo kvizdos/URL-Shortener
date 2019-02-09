@@ -396,4 +396,4 @@ app.get('/:path?', (req, res) => {
         
 });
 
-app.listen(3030, '127.0.0.1')
+app.listen(config.port, '127.0.0.1')

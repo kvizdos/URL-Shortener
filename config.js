@@ -1,5 +1,7 @@
 var config = {};
 
+config.port = 7777;
+
 config.mongourl = "mongodb://localhost:27017";
 config.database = "shorty";
 config.linksCollection = "links";
