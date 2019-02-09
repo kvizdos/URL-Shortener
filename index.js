@@ -193,7 +193,7 @@ app.post('/admin/auth', (req, res) => {
                         if (err) {
                             throw err;
                         } else {
-                            res.json({token: newToken});
+                            res.json({token: newToken, base: config.urlbase});
                         }
                         db.close();
                     });
@@ -227,7 +227,7 @@ app.post('/api/create', (req, res) => {
 
 
 
-    if(custom == undefined) {
+    if(custom == "" || custom == undefined) {
         custom = makeid(6);
     }
 

@@ -25,9 +25,10 @@ function createLink() {
     var url = $('#shortUrl').val();
     var custom = $('#preselection').val();
 
-    allLinks.push({url: url, path: custom, clicks: 0});
-    localStorage.setItem("links", JSON.stringify(allLinks));
-    setTable(allLinks);
+    $('#createBtn').removeClass('btn-success');
+    $('#createBtn').addClass('btn-warning');
+    $('#createBtn').text("Creating...");
+    $('#createBtn').attr('disabled');
         $.ajax({
             contentType: 'application/x-www-form-urlencoded',
             data: {"url": url, "custom": custom},
@@ -36,10 +37,19 @@ function createLink() {
             }, 
             dataType: 'json',
             success: function(data, textStatus, xhr) {
-                console.log(data);
+                allLinks.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
+                localStorage.setItem("links", JSON.stringify(allLinks));
+                setTable(allLinks);
+
+                $('#createBtn').addClass('btn-success');
+                $('#createBtn').removeClass('btn-warning');
+                $('#createBtn').text("Shorten!");
+                $('#createBtn').removeAttr('disabled');
             },
             error: function(data, textStatus, xhr) {
-                console.log("FAIL");
+                $('#createBtn').addClass('btn-danger');
+                $('#createBtn').removeClass('btn-warning');
+                $('#createBtn').text("Failed! Relogin!");
                 sessionStorage.clear();
                 window.location.href = "/";
             },
@@ -203,7 +213,7 @@ function saveChanges() {
 function copy(that){
     var inp =document.createElement('input');
     document.body.appendChild(inp)
-    inp.value ="https://kvizdos.com/" + that.textContent
+    inp.value = localStorage.getItem('base') + that.textContent
     inp.select();
     document.execCommand('copy',false);
     inp.remove();

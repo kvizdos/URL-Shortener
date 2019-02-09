@@ -14,6 +14,7 @@ function login() {
         success: function(data) {
             if(data['token'] !== undefined) {
                 sessionStorage['auth'] = JSON.stringify({username: username, token: data['token']});
+                localStorage.setItem('base', data['base']);
                 window.location.href = "/admin";
             } else {
                 $('#username').val("");
