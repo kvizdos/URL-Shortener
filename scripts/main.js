@@ -272,6 +272,7 @@ function setData(dp) {
         <canvas id='clickChart'></canvas>\
         <br>\
         <h3>Referrals:</h3>\
+        <i>Unknown URL either means the user has disabled referral headers or they directly accessed the URL (copy/paste)</i><br><br>\
         "+refs+"\
         <span id='modalId'>"+dp+"</span>")
     
