@@ -233,28 +233,25 @@ function setData(dp) {
     var ctx = document.getElementById("clickChart").getContext("2d");
     var labels = [];
     var data = [];
+    var dataAt = 0;
     var clicks = JSON.parse(localStorage.getItem('links'));
-        console.log("going")
-        data = clicks.map((element) => {
-            if(element['detailedClicks'] !== undefined) {
-                return element['detailedClicks'].map((detailed) => {
-                    console.log(detailed);
-                    labels.push(new Date(detailed['date']).toLocaleString());
-            
-                    return {t: new Date(detailed['date']).toLocaleString(), y: detailed['count']};
+                data = clicks.map((element) => {
+                    if(element['detailedClicks'] !== undefined && element['path'] == allLinks[dp]['path']) {
+                        return element['detailedClicks'].map((detailed) => {
+                            dataAt = clicks.indexOf(element);
+                            labels.push(new Date(detailed['date']).toLocaleString());
+                    
+                            return {t: new Date(detailed['date']).toLocaleString(), y: detailed['count']};
+                        })
+                    }
                 })
-            }
-        })
-        console.log(data);
-        console.log(labels);
-    
     var clickChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [{
             label: 'Daily Clicks',
-            data: data[0],
+            data: data[dataAt],
             backgroundColor: [
               'rgba(255, 99, 132, 0.2)',
               'rgba(54, 162, 235, 0.2)',
