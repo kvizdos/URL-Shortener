@@ -1,4 +1,6 @@
 var allLinks = JSON.parse(localStorage.getItem('links')) !== null ? JSON.parse(localStorage.getItem('links')) : [];
+var allSubs = JSON.parse(localStorage.getItem('subs')) !== null ? JSON.parse(localStorage.getItem('subs')) : [];
+
 var allUsers = [{username: "kvidos", "lastlogin": "2/9/2019"}];
 
 
@@ -22,8 +24,15 @@ if(sessionStorage['auth'] !== undefined) {
 }
 
 function createLink() {
-    var url = $('#shortUrl').val();
-    var custom = $('#preselection').val();
+
+    var url = $('#customSub').prop('disabled') == true ? $('#shortUrl').val() : $('#customSub').val();
+    var custom = $('#customSub').prop('disabled') == true ? $('#preselection').val() : $('#customSubRedirect').val();
+    // 0 = path, 1 = subdomain
+    var type = $('#customSub').prop('disabled') == true ? 0 : 1;
+
+    console.log(url);
+    console.log(custom);
+    console.log(type);
 
     $('#createBtn').removeClass('btn-success');
     $('#createBtn').addClass('btn-warning');
@@ -31,47 +40,146 @@ function createLink() {
     $('#createBtn').attr('disabled');
         $.ajax({
             contentType: 'application/x-www-form-urlencoded',
-            data: {"url": url, "custom": custom},
+            data: {"url": url, "custom": custom, username:JSON.parse(sessionStorage.getItem("auth"))['username'], type: type },
             headers: {
                 "Authorization": JSON.stringify({username:JSON.parse(sessionStorage.getItem("auth"))['username'], token: JSON.parse(sessionStorage.getItem("auth"))['token'] })
             }, 
             dataType: 'json',
             success: function(data, textStatus, xhr) {
-                allLinks.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
-                localStorage.setItem("links", JSON.stringify(allLinks));
-                setTable(allLinks);
+                if(data['status'] == "complete") {
+                    allLinks.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
+                    localStorage.setItem("links", JSON.stringify(allLinks));
+                    setTable(allLinks, type);
 
-                $('#createBtn').addClass('btn-success');
-                $('#createBtn').removeClass('btn-warning');
-                $('#createBtn').text("Shorten!");
-                $('#createBtn').removeAttr('disabled');
+                    $('#createBtn').addClass('btn-success');
+                    $('#createBtn').removeClass('btn-warning');
+                    $('#createBtn').text("Shorten!");
+                    $('#createBtn').removeAttr('disabled');
+                } else {
+                    $('#createBtn').addClass('btn-danger');
+                    $('#createBtn').removeClass('btn-warning');
+                    $('#createBtn').text("Failed! Sub/path taken!");
+                    $('#createBtn').prop("disabled", true);
+                    setTimeout(function() {
+                        $('#createBtn').addClass('btn-success');
+                        $('#createBtn').removeClass('btn-danger');
+                        $('#createBtn').text("Shorten!");
+                        $('#createBtn').prop("disabled", false);
+                    }, 2500);
+                }
             },
             error: function(data, textStatus, xhr) {
                 $('#createBtn').addClass('btn-danger');
                 $('#createBtn').removeClass('btn-warning');
-                $('#createBtn').text("Failed! Relogin!");
-                sessionStorage.clear();
-                window.location.href = "/";
+                if(data.status == 406) {
+                    $('#createBtn').text("Failed! Please fill out info!");
+                    setTimeout(function() {
+                        $('#createBtn').addClass('btn-success');
+                        $('#createBtn').removeClass('btn-danger');
+                        $('#createBtn').text("Shorten!");
+                    }, 2500);
+                } else {
+                    $('#createBtn').text("Failed! Unauthorized, re-login!");
+                    sessionStorage.clear();
+                    window.location.href = "/";
+                }
             },
             type: "POST",
             url: "/api/create"
         })
 }
 $(document).ready(function() {
+    $('#baseUrl').text("." + localStorage.getItem('base').split('/')[2] + " ->");
+    $('#createBtn').prop('disabled', true);
+
     if(allLinks.length != 0) {
         setTable(allLinks);
+    }
+
+    if(allSubs.length != 0) {
+        setTable(allSubs, 1);
     }
     const getUrl = "/api/list";
     $.ajax({
         url: getUrl,
-        type: "GET",
+        data: { username: JSON.parse(sessionStorage['auth'])['username'] },
+        type: "POST",
         success: function(res) {
-            allLinks = res;
+            console.log(res);
+            allLinks = res[0];
             setTable(allLinks);
 
+            allSubs = res[1];
+            setTable(allSubs, 1);
+            //setSubTable(allSubs);
+
             localStorage.setItem("links", JSON.stringify(allLinks));
+            localStorage.setItem("subs", JSON.stringify(allSubs));
+
         }
     });
+
+    /* 
+    HANDLE INPUTS (make sure only one is filled)
+    */
+    
+    $('#customSub').on('input', function() {
+        if($('#customSub').val() !== "") {
+            $('#shortUrl').prop('disabled', true);
+            $('#preselection').prop('disabled', true);
+
+        } else if($('#customSubRedirect').val() == ""){
+            $('#shortUrl').prop('disabled', false);
+            $('#preselection').prop('disabled', false);
+        }
+
+        if($('#customSub').val() == "" || $('#customSubRedirect').val() == "") {
+            $('#createBtn').prop('disabled', true);
+        } else if($('#customSubRedirect').val() !== "") {
+            $('#createBtn').prop('disabled', false);
+        }
+    })
+    $('#customSubRedirect').on('input', function() {
+        if($('#customSubRedirect').val() !== "") {
+            $('#shortUrl').prop('disabled', true);
+            $('#preselection').prop('disabled', true);
+        } else if(($('#customSub').val() == "")) {
+            $('#shortUrl').prop('disabled', false);
+            $('#preselection').prop('disabled', false);    
+            
+            $('#createBtn').prop('disabled', true);        
+        }
+
+        if($('#customSub').val() == "" || $('#customSubRedirect').val() == "") {
+            $('#createBtn').prop('disabled', true);
+        } else if($('#customSubRedirect').val() !== "") {
+            $('#createBtn').prop('disabled', false);
+        }
+    })
+
+    $('#shortUrl').on('input', function() {
+        if($('#shortUrl').val() !== "") {
+            $('#customSub').prop('disabled', true);
+            $('#customSubRedirect').prop('disabled', true);
+
+            $('#createBtn').prop('disabled', false);
+        } else {
+            $('#customSub').prop('disabled', false);
+            $('#customSubRedirect').prop('disabled', false);
+
+            $('#createBtn').prop('disabled', true);
+        }
+    })
+    $('#preselection').on('input', function() {
+        if($('#preselection').val() !== "") {
+            $('#customSub').prop('disabled', true);
+            $('#customSubRedirect').prop('disabled', true);
+        } else if($('#shortUrl').val() == "") {
+            $('#customSub').prop('disabled', false);
+            $('#customSubRedirect').prop('disabled', false);
+
+        }
+    })
 
     
 
@@ -122,10 +230,11 @@ var myChart = new Chart(ctx, {
   */
 });
 
-function setTable(links) {
-    $("thead").children().not(':first').remove()
+function setTable(links, type = 0) {
+    var tab = type == 0 ? "linkTable" : "subsTable";
+    $("#"+tab+" thead").children().not(':first').remove()
 
-    var table = document.getElementById('linkTable');
+    var table = document.getElementById(tab);
     for(var i = 0; i < links.length; i++) {
         var row = table.insertRow(1);
 
@@ -137,7 +246,12 @@ function setTable(links) {
         c2.innerHTML  = "<span class='hovEnable' onclick='copy(this)'>" + links[i]['path'] + "</span>";
         c3.innerHTML  = links[i]['clicks'];
 
-        c4.innerHTML = '<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" onclick="setData('+i+')"><i class="fas fa-folder-open"></i></button>'
+        if(type == 0) {
+            c4.innerHTML = '<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" onclick="setData('+i+')"><i class="fas fa-folder-open"></i></button>'
+        } else {
+            c4.innerHTML = '<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" onclick="setData('+i+', 1)"><i class="fas fa-folder-open"></i></button>'
+
+        }
     }   
 }
 
@@ -228,7 +342,9 @@ const capitalize = (s) => {
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
 
-function setData(dp) {
+function setData(dp, type = 0) {
+    var useLinks = type == 0 ? allLinks : allSubs;
+    console.log(type);
     /*
     <ul class="list-group">
     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -248,11 +364,11 @@ function setData(dp) {
 
     var refs = '<ul class="list-group">';
 
-    if(allLinks[dp]['referrals'].length > 0) {
-        for(var i = 0; i < allLinks[dp]['referrals'].length; i++) {
+    if(useLinks[dp]['referrals'].length > 0) {
+        for(var i = 0; i < useLinks[dp]['referrals'].length; i++) {
             refs += '<li class="list-group-item d-flex justify-content-between align-items-center">\
-                        '+allLinks[dp]['referrals'][i]['url']+'\
-                        <span class="badge badge-primary badge-pill">'+allLinks[dp]['referrals'][i]['count']+'</span>\
+                        '+useLinks[dp]['referrals'][i]['url']+'\
+                        <span class="badge badge-primary badge-pill">'+useLinks[dp]['referrals'][i]['count']+'</span>\
                     </li>'
         }
     } else {
@@ -262,12 +378,12 @@ function setData(dp) {
     }
     refs += '</ul>';
 
-    $('#modalLabel').html("<strong id='modalLinkName'>" + allLinks[dp]['path'] + "</strong>'s information");
-    $('#modalBody').html("<h3>Points to: </h3><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+allLinks[dp]['url']+"' id='modifyShortUrl'>\
+    $('#modalLabel').html("<strong id='modalLinkName'>" + useLinks[dp]['path'] + "</strong>'s information");
+    $('#modalBody').html("<h3>Points to: </h3><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+useLinks[dp]['url']+"' id='modifyShortUrl'>\
         <br>\
         <button type='button' class='btn btn-primary' id='saveBtn' onclick='saveChanges()'>Save changes</button>\
         <br><br>\
-        <h3>Clicks: " + allLinks[dp]['clicks'] + "</h3>\
+        <h3>Clicks: " + useLinks[dp]['clicks'] + "</h3>\
         <br>\
         <canvas id='clickChart'></canvas>\
         <br>\
@@ -276,7 +392,7 @@ function setData(dp) {
         "+refs+"\
         <span id='modalId'>"+dp+"</span>")
     
-        $("#deleteBtn").click(function(){ deleteLink(dp); });
+        $("#deleteBtn").click(function(){ deleteLink(dp, type); });
 
 
     var ctx = document.getElementById("clickChart").getContext("2d");
@@ -327,13 +443,17 @@ function navigate(to) {
     switch(to) {
         case "urls":
             $('#urlNavBtn').addClass('active');
-            $('#usersNavBtn').removeClass('active');
-            $('#settingsNavBtn').removeClass('active');
-
+            $('#subsNavBtn').removeClass('active');
             $('#linkTableContainer').show();
-            $('#usersContainer').hide();
-            $('#settingsContainer').hide();
+            $('#subTableContainer').hide();
             break;
+        case "subs":
+            $('#urlNavBtn').removeClass('active');
+            $('#subsNavBtn').addClass('active');
+            $('#linkTableContainer').hide();
+            $('#subTableContainer').show();
+            break;
+            /*
         case "users":
             $('#urlNavBtn').removeClass('active');
             $('#usersNavBtn').addClass('active');
@@ -352,5 +472,6 @@ function navigate(to) {
             $('#usersContainer').hide();
             $('#settingsContainer').show();
             break;
+            */
     }
 }

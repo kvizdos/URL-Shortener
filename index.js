@@ -18,14 +18,15 @@ function makeid(len) {
 
   return text;
 }
-
-async function checkPath(p) {
+// type 0 = path, 1 = subdomain
+async function checkPath(p, type = 0) {
     return new Promise((resolve, reject) => {
+        var col = type == 0 ? config.linksCollection : config.subCollection;
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
             var myobj = { path: p };
-            dbo.collection(config.linksCollection).findOne(myobj, function(err, res) {
+            dbo.collection(col).findOne(myobj, function(err, res) {
                 if (err) throw err;
                 if(res !== null) {
                     resolve({url: res['url']})
@@ -40,13 +41,15 @@ async function checkPath(p) {
     })
 }
 
-async function findLinks(p) {
+async function findLinks(owner, type = 0) {
     return new Promise((resolve, reject) => {
+        var col = type == 0 ? config.linksCollection : config.subCollection;
+
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
-            var myobj = { };
-            dbo.collection(config.linksCollection).find({}).toArray(function(err, res) {
+            var myobj = { owner: owner };
+            dbo.collection(col).find(myobj).toArray(function(err, res) {
                 if (err) throw err;
                 resolve(res);
                 db.close();
@@ -55,13 +58,16 @@ async function findLinks(p) {
     })
 }
 
-async function createPath(newUrl, p) {
+// type 0 = path, 1 = sub
+async function createPath(newUrl, p, owner, type = 0) {
     return new Promise((resolve, reject) => {
+        var col = type == 0 ? config.linksCollection : config.subCollection;
+
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
-            var myobj = { url: newUrl, path: p, clicks: [], referrals: [] };
-            dbo.collection(config.linksCollection).insertOne(myobj, function(err, res) {
+            var myobj = { owner: owner, url: newUrl, path: p, clicks: [], referrals: [] };
+            dbo.collection(col).insertOne(myobj, function(err, res) {
                 if (err) {
                     throw err;
                 } else {
@@ -73,17 +79,18 @@ async function createPath(newUrl, p) {
     });
 }
 
-async function clickUrl(path, req = []) {
+async function clickUrl(path, req = [], type = 0) {
     return new Promise((resolve, reject) => {
         var clickTime = new Date();
         var ref = req.get("Referer") !== undefined ? req.get("Referer") : "http://Unknown URL";
+        var col = type == 0 ? config.linksCollection : config.subCollection;
 
         clickTime = clickTime.getFullYear() + "-" + clickTime.getDate() + "-" + (clickTime.getMonth() + 1);
         MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
             if (err) reject(err)
             var dbo = db.db(config.database);
             var findobj = { path: path };
-            dbo.collection(config.linksCollection).updateOne({path: path}, {$push: {clicks: clickTime, referrals: ref}}, function(err, res) {
+            dbo.collection(col).updateOne({path: path}, {$push: {clicks: clickTime, referrals: ref}}, function(err, res) {
                 if (err) {
                     throw err;
                 } else {
@@ -226,30 +233,52 @@ app.use('/static', express.static('scripts'))
 app.post('/api/create', (req, res) => {
     var url = req.body['url']; // Full URL to shorten
     var custom = req.body['custom']; // custom path
+    var owner = req.body['username']; // set user
+    var type = req.body['type'];
 
+    if(url !== undefined && url !== "") {
+        // Handle New Path Redirects
+        if(type == "0") {
+            if(custom == "" || custom == undefined) {
+                custom = makeid(6);
+            }
 
-
-    if(custom == "" || custom == undefined) {
-        custom = makeid(6);
-    }
-
-    checkPath(custom).then((resp) => {
-        if(resp == true) {
-            res.end(JSON.stringify({status: "complete", path: custom}))
-            createPath(url, custom).then((res) => {
-                console.log("Created Link: " + custom);
+            checkPath(custom).then((resp) => {
+                if(resp == true) {
+                    createPath(url, custom, owner).then((resp) => {
+                        res.json({status: "complete", path: custom});
+                    })
+                } else {
+                    res.json({status: "pathTaken"});
+                }
             })
-        } else {
-            res.end(JSON.stringify({status: "pathTaken"}));
         }
-    })
+        // Handle New Subdomain Redirects
+        if(type == "1") {
+            if(custom !== undefined && url !== undefined) {
+                checkPath(url, 1).then((resp) => {
+                    if(resp == true) {
+                        createPath(custom, url, owner, 1).then((resp) => {
+                            res.json({status: "complete", path: url});
+
+                        });
+                    } else {
+                        res.json({status: "subTaken"}); 
+                    }
+                })            
+            } else {
+                res.json({status: "noArgs"});
+            }
+        }
+    } else {
+        res.status(406).send("invalidArgs");
+    }
 
 });
 
 app.post('/api/click', (req, res) => {
     var url = req.body['url'].split("/")[req.body['url'].split("/").length - 1];
-    res.end(JSON.stringify({status: "done"}));
-    console.log(req.socket.remoteAddress);
+    res.json({status: "done"});
 
     clickUrl(url, req);
 })
@@ -304,8 +333,11 @@ function getAllIndexes(arr, val) {
     return indexes;
 }
 
-app.get('/api/list', (req, res) => {
-    findLinks().then((resp) => {
+app.post('/api/list', (req, res) => {
+    var owner = req.body['username'];
+    var paths = [];
+    var subs = [];
+    findLinks(owner).then((resp) => {
         for(let i = 0; i < resp.length; i++) {
             var clicks = resp[i]['clicks'];
             var allrefs = resp[i]["referrals"];
@@ -363,35 +395,115 @@ app.get('/api/list', (req, res) => {
 
             resp[i]["referrals"] = refs;
         }
-        res.json(resp);
+
+        paths = resp;
+
+        findLinks(owner, 1).then((resps) => {
+            for(let i = 0; i < resps.length; i++) {
+                var clicks = resps[i]['clicks'];
+                var allrefs = resps[i]["referrals"];
+                var clickCount = clicks.length;
+                var detailedClicks = [];
+                var refs = [];
+    
+                var setDates = [];
+                var setRefs = [];
+    
+                var addPaths = [];
+    
+                detailedClicks = clicks.map((element) => {
+                    if(setDates.indexOf(element) == -1) {
+                        setDates.push(element)
+                        return {date: element, count: getAllIndexes(clicks, element).length};
+    
+                    } else {
+                        return false;
+                    }
+                }).filter((element) => {
+                    if(element !== false) {
+                        return element;
+                    } else {
+                        return false;
+                    }
+                });
+    
+                refs = allrefs.map((element) => {
+                    var fullUrl = element;
+                    var hostname = element.split('/')[2];
+    
+                    if(setRefs.indexOf(hostname) == -1) {
+                        setRefs.push(hostname)
+                        return {url: hostname, count: getAllIndexes(allrefs, element).length, paths: [fullUrl]};
+    
+                    } else {
+                        return {hostname: hostname, fullUrl: fullUrl};
+                    }
+                }).filter((element) => {
+                    if(element['hostname'] == undefined) {
+                        return element;
+                    } else {
+                        addPaths.push(element);
+                        return false;
+                    }
+                });
+    
+                for(var x = 0; x < addPaths.length; x++) {
+                    refs[setRefs.indexOf(addPaths[x]['hostname'])]['paths'].push(addPaths[x]['fullUrl']);
+                }
+                
+                resps[i]['clicks'] = clicks.length;
+                resps[i]['detailedClicks'] = detailedClicks;
+    
+                resps[i]["referrals"] = refs;
+            }
+    
+            subs = resps;
+
+            res.json([paths, subs]);
+        })
+        
     })
+
 });
 
 
 
 app.get('/:path?', (req, res) => {
     var path = req.params.path;
-    if(path == 'undefined') {
-        res.redirect('/login');
-    }
-    if(path == 'admin') {
-        res.sendFile('public/index.html' , { root : __dirname});
-    }
-    if(path == 'login') {
-        res.sendFile('public/login.html' , { root : __dirname});
-    }
-    if(path == 'test') {
-        res.sendFile('public/test.html' , { root : __dirname});
-    }
-    if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "test" && path !== "") {
-        checkPath(path).then((resp) => {
+    var domain = req.get('host').match(/\w+/); // e.g., host: "subdomain.website.com"
+
+    if(domain[0] !== config.urlbase.split('/')[2]) {
+        checkPath(domain[0], 1).then((resp) => {
             if(resp['url'] !== undefined) {
-                clickUrl(path, req);
+                clickUrl(domain[0], req, 1);
                 res.redirect(resp['url']);
             } else {
-                res.redirect('/login');
+                res.redirect('back');
             }
         })
+    } else {
+        if(path == 'undefined') {
+            res.redirect('/login');
+        }
+        if(path == 'admin') {
+            res.sendFile('public/index.html' , { root : __dirname});
+        }
+        if(path == 'login') {
+            res.sendFile('public/login.html' , { root : __dirname});
+        }
+        if(path == 'test') {
+            res.sendFile('public/test.html' , { root : __dirname});
+        }
+        if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "test" && path !== "") {
+            checkPath(path).then((resp) => {
+                if(resp['url'] !== undefined) {
+                    clickUrl(path, req);
+                    res.redirect(resp['url']);
+                } else {
+                    res.redirect('/login');
+                }
+            })
+        }
     }
         
 });

@@ -35,6 +35,9 @@
             #settingsContainer {
                 display: none;
             }
+            #subTableContainer {
+                display: none;
+            }
             .nav-link {
                 cursor: pointer;
             }
@@ -76,6 +79,17 @@
                                 <input type="text" class="form-control" id="preselection" placeholder="customlink">
                         </div>
                         <br>
+                        <div class="input-group mb-3">
+                            <input placeholder="socialmedia" type="text" class="form-control" id="customSub" aria-describedby="baseUrl">
+                            
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="baseUrl"></span>
+                            </div>
+
+                            <input placeholder="https://example.com" type="text" class="form-control" id="customSubRedirect" aria-describedby="baseUrl">
+
+                          </div>
+                        <br>
                         <button class="btn btn-md btn-success btn-block" id="createBtn" onclick="createLink();">Shorten!</button>
                     </div>
                     <div class="alert alert-success" role="alert" id="copyConfirm">
@@ -87,10 +101,7 @@
                             <a class="nav-link active" id="urlNavBtn" onclick="navigate('urls');">URLs</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="usersNavBtn" onclick="navigate('users');">Users</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="settingsNavBtn" onclick="navigate('settings');">Settings</a>
+                            <a class="nav-link" id="subsNavBtn" onclick="navigate('subs');">Subdomains</a>
                         </li>
                     </ul>
 
@@ -109,13 +120,21 @@
                         </table>
                     </div>
 
-                    <div class="table-responsive" id="usersContainer">
-                        <h2>Users:</h2>
-                    </div> 
-
-                    <div class="table-responsive" id="settingsContainer">
-                        <h2>Settings:</h2>
+                    <div class="table-responsive" id="subTableContainer">
+                        <table class="table" id="subsTable">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Subdomain (Click to copy)</th>
+                                    <th scope="col">Clicks</th>
+                                    <th scope="col"> </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
+
                 </div>
                 <div class="col-md-4"></div>
             </div>
