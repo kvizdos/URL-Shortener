@@ -47,10 +47,15 @@ function createLink() {
             dataType: 'json',
             success: function(data, textStatus, xhr) {
                 if(data['status'] == "complete") {
-                    allLinks.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
-                    localStorage.setItem("links", JSON.stringify(allLinks));
-                    setTable(allLinks, type);
-
+                    if(type == 0) {
+                        allLinks.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
+                        localStorage.setItem("links", JSON.stringify(allLinks));
+                        setTable(allLinks);
+                    } else {
+                        allSubs.push({url: url, path: data['path'], clicks: 0, detailedClicks: {}});
+                        localStorage.setItem("subs", JSON.stringify(allSubs));
+                        setTable(allSubs, 1);
+                    }
                     $('#createBtn').addClass('btn-success');
                     $('#createBtn').removeClass('btn-warning');
                     $('#createBtn').text("Shorten!");
@@ -255,23 +260,30 @@ function setTable(links, type = 0) {
     }   
 }
 
-function deleteLink(link) {
+function deleteLink(link, type = 0) {
     $('#deleteBtn').attr('disabled', 'true');
     $('#deleteBtn').removeClass('btn-danger');
     $('#deleteBtn').addClass('btn-warning');
     $('#deleteBtn').text("Deleting...");
+    var use = type == 0 ? allLinks : allSubs;
     $.ajax({
         contentType: 'application/x-www-form-urlencoded',
-        data: {path: allLinks[link]['path']},
+        data: {path: use[link]['path'], type: type},
         dataType: 'json',
         headers: {
             "Authorization": JSON.stringify({username:JSON.parse(sessionStorage.getItem("auth"))['username'], token: JSON.parse(sessionStorage.getItem("auth"))['token'] })
         },
         success: function(data) {
             if(data['status'] == "success") {
-                allLinks.splice(link, 1);
-                localStorage.setItem('links', JSON.stringify(allLinks));
-                setTable(allLinks);
+                if(type == 0) {
+                    allLinks.splice(link, 1);
+                    localStorage.setItem('links', JSON.stringify(allLinks));
+                    setTable(allLinks);
+                } else {
+                    allSubs.splice(link, 1);
+                    localStorage.setItem('subs', JSON.stringify(allSubs));
+                    setTable(allSubs, 1);
+                }
                 $("#exampleModal").modal('toggle');
             }
         },
@@ -285,7 +297,7 @@ function deleteLink(link) {
     })
 }
 
-function saveChanges() {
+function saveChanges(type = 0) {
     var change = $('#modifyShortUrl').val();
     var id = $('#modalId').text();
     var name = $('#modalLinkName').text();
@@ -297,17 +309,22 @@ function saveChanges() {
 
     $.ajax({
         contentType: 'application/x-www-form-urlencoded',
-        data: { path: name, change: change },
+        data: { path: name, change: change, type: type },
         dataType: 'json',
         headers: {
             "Authorization": JSON.stringify({username:JSON.parse(sessionStorage.getItem("auth"))['username'], token: JSON.parse(sessionStorage.getItem("auth"))['token'] })
         },
         success: function(data) {
             if(data['status'] == "success") {
-                allLinks[id]['url'] = change;
-                localStorage.setItem('links', JSON.stringify(allLinks));
-                setTable(allLinks);
-
+                if(type == 0) {
+                    allLinks[id]['url'] = change;
+                    localStorage.setItem('links', JSON.stringify(allLinks));
+                    setTable(allLinks);
+                } else {
+                    allSubs[id]['url'] = change;
+                    localStorage.setItem('subs', JSON.stringify(allSubs));
+                    setTable(allSubs, 1);
+                }
                 $('#saveBtn').removeAttr('disabled');
                 $('#saveBtn').removeClass('btn-warning');
                 $('#saveBtn').addClass('btn-primary');
@@ -381,7 +398,7 @@ function setData(dp, type = 0) {
     $('#modalLabel').html("<strong id='modalLinkName'>" + useLinks[dp]['path'] + "</strong>'s information");
     $('#modalBody').html("<h3>Points to: </h3><input type='text' class='form-control' placeholder='www.example.com/bla/blah/bloo' value='"+useLinks[dp]['url']+"' id='modifyShortUrl'>\
         <br>\
-        <button type='button' class='btn btn-primary' id='saveBtn' onclick='saveChanges()'>Save changes</button>\
+        <button type='button' class='btn btn-primary' id='saveBtn' onclick='saveChanges("+type+")'>Save changes</button>\
         <br><br>\
         <h3>Clicks: " + useLinks[dp]['clicks'] + "</h3>\
         <br>\
@@ -399,6 +416,7 @@ function setData(dp, type = 0) {
     var labels = [];
     var data = [];
     var dataAt = 0;
+    if(type == 0) {
     var clicks = JSON.parse(localStorage.getItem('links'));
                 data = clicks.map((element) => {
                     if(element['detailedClicks'] !== undefined && element['path'] == allLinks[dp]['path']) {
@@ -410,6 +428,19 @@ function setData(dp, type = 0) {
                         })
                     }
                 })
+    } else {
+        var clicks = JSON.parse(localStorage.getItem('subs'));
+                data = clicks.map((element) => {
+                    if(element['detailedClicks'] !== undefined && element['path'] == allSubs[dp]['path']) {
+                        return element['detailedClicks'].map((detailed) => {
+                            dataAt = clicks.indexOf(element);
+                            labels.push(new Date(detailed['date']).toLocaleString());
+                    
+                            return {t: new Date(detailed['date']).toLocaleString(), y: detailed['count']};
+                        })
+                    }
+                })
+    }
     var clickChart = new Chart(ctx, {
         type: 'line',
         data: {

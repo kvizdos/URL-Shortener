@@ -10,7 +10,7 @@ config.subCollection = "subs";
 config.usersCollection = "users";
 
 // Make sure to include final '/'!
-//config.urlbase = "https://kvizdos.com/";
-config.urlbase = "http://localhost";
+config.urlbase = "https://kvizdos.com/";
+//config.urlbase = "http://localhost";
 
 module.exports = config;

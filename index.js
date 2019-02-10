@@ -286,13 +286,16 @@ app.post('/api/click', (req, res) => {
 
 app.post('/api/delete', (req, res) => {
     var path = req.body['path'];
-    checkPath(path).then((response) => {
+    var type = req.body['type'];
+
+    checkPath(path, type).then((response) => {
         if(response['url'] !== undefined) {
+            var col = type == 0 ? config.linksCollection : config.subCollection;
             MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
                 if (err) reject(err)
                 var dbo = db.db(config.database);
                 var myobj = { path: path };
-                dbo.collection(config.linksCollection).deleteOne(myobj, function(err, resp) {
+                dbo.collection(col).deleteOne(myobj, function(err, resp) {
                     if (err) throw err;
                     res.json({status: "success"});
                     db.close();
@@ -307,13 +310,16 @@ app.post('/api/delete', (req, res) => {
 app.post('/api/update', (req, res) => {
     var path = req.body['path'];
     var change = req.body['change'];
-    checkPath(path).then((response) => {
+    var type = req.body['type'];
+
+    checkPath(path, type).then((response) => {
         if(response['url'] !== undefined) {
+            var col = type == 0 ? config.linksCollection : config.subCollection;
             MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
                 if (err) reject(err)
                 var dbo = db.db(config.database);
                 var myobj = { path: path };
-                dbo.collection(config.linksCollection).updateOne({path: path}, {$set: {url: change}}, function(err, resp) {
+                dbo.collection(col).updateOne({path: path}, {$set: {url: change}}, function(err, resp) {
                     if (err) throw err;
                     res.json({status: "success"});
                     db.close();
