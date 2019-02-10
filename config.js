@@ -11,6 +11,6 @@ config.usersCollection = "users";
 
 // Make sure to include final '/'!
 config.urlbase = "https://kvizdos.com/";
-//config.urlbase = "http://localhost";
+//config.urlbase = "http://localhost.com";
 
 module.exports = config;

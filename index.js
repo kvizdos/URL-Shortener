@@ -478,7 +478,7 @@ app.get('/:path?', (req, res) => {
     var path = req.params.path;
     var domain = req.get('host').match(/\w+/); // e.g., host: "subdomain.website.com"
 
-    if(domain[0] !== config.urlbase.split('/')[2]) {
+    if(domain[0] !== config.urlbase.split('/')[2].split('.')[0]) {
         checkPath(domain[0], 1).then((resp) => {
             if(resp['url'] !== undefined) {
                 clickUrl(domain[0], req, 1);
