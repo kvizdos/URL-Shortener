@@ -1,5 +1,6 @@
 // Install body-parser and Express
 const express = require('express')
+var cors = require('cors')
 const app = express()
 
 const config = require('./config');
@@ -8,6 +9,13 @@ var bodyParser = require('body-parser')
 var MongoClient = require('mongodb').MongoClient;
 var url = config.mongourl;
 var crypto = require('crypto');
+
+var cachedUrls = [
+    [], // Cached paths
+    [], // Cached subdomains
+    [], // Cached path URLs
+    []  // Cached subdomain URLS
+]
 
 function makeid(len) {
   var text = "";
@@ -21,23 +29,36 @@ function makeid(len) {
 // type 0 = path, 1 = subdomain
 async function checkPath(p, type = 0) {
     return new Promise((resolve, reject) => {
-        var col = type == 0 ? config.linksCollection : config.subCollection;
-        MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
-            if (err) reject(err)
-            var dbo = db.db(config.database);
-            var myobj = { path: p };
-            dbo.collection(col).findOne(myobj, function(err, res) {
-                if (err) throw err;
-                if(res !== null) {
-                    resolve({url: res['url']})
-                    //return true;
-                } else {
-                    resolve(true);
-                    //return false;
-                }
-                db.close();
+        if(type == 0 && cachedUrls[0].indexOf(p) >= 0) {
+            resolve({url: cachedUrls[2][cachedUrls[0].indexOf(p)]})
+        } else if(type == 1 && cachedUrls[1].indexOf(p) >= 0) {
+            resolve({url: cachedUrls[3][cachedUrls[1].indexOf(p)]})
+        } else {
+            var col = type == 0 ? config.linksCollection : config.subCollection;
+            MongoClient.connect(url, { useNewUrlParser: true }, function(err, db) {
+                if (err) reject(err)
+                var dbo = db.db(config.database);
+                var myobj = { path: p };
+                dbo.collection(col).findOne(myobj, function(err, res) {
+                    if (err) throw err;
+                    if(res !== null) {
+                        if(type == 0) {
+                            cachedUrls[0].push(p);
+                            cachedUrls[2].push(res['url']);
+                        } else {
+                            cachedUrls[1].push(p);
+                            cachedUrls[3].push(res['url']);
+                        }
+                        resolve({url: res['url']})
+                        //return true;
+                    } else {
+                        resolve(true);
+                        //return false;
+                    }
+                    db.close();
+                });
             });
-        });
+        }
     })
 }
 
@@ -154,6 +175,7 @@ async function verifyUser(username, token) {
 // Use req.query to read values!!
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 var preverify = function(req, res, next) {
     path = req.originalUrl.split('/');
@@ -501,6 +523,7 @@ app.get('/:path?', (req, res) => {
             res.sendFile('public/test.html' , { root : __dirname});
         }
         if(path !== 'static' && path !== 'admin' && path !== 'login' && path !== "test" && path !== "") {
+            console.log(path);
             checkPath(path).then((resp) => {
                 if(resp['url'] !== undefined) {
                     clickUrl(path, req);

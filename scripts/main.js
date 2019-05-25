@@ -383,7 +383,7 @@ function setData(dp, type = 0) {
 
     if(useLinks[dp]['referrals'].length > 0) {
         for(var i = 0; i < useLinks[dp]['referrals'].length; i++) {
-            refs += '<li class="list-group-item d-flex justify-content-between align-items-center">\
+            refs += '<li class="list-group-item d-flex justify-content-between align-items-center" onclick="showClicks('+i+')" >\
                         '+useLinks[dp]['referrals'][i]['url']+'\
                         <span class="badge badge-primary badge-pill">'+useLinks[dp]['referrals'][i]['count']+'</span>\
                     </li>'
@@ -505,4 +505,8 @@ function navigate(to) {
             break;
             */
     }
+}
+
+function showClicks(i) {
+    console.log(i);
 }
