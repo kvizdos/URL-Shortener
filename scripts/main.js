@@ -266,6 +266,8 @@ function deleteLink(link, type = 0) {
     $('#deleteBtn').addClass('btn-warning');
     $('#deleteBtn').text("Deleting...");
     var use = type == 0 ? allLinks : allSubs;
+    console.log(type);
+    console.log(link);
     $.ajax({
         contentType: 'application/x-www-form-urlencoded',
         data: {path: use[link]['path'], type: type},
