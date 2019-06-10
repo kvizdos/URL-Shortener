@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.3",
-    "bootstrap": "^4.2.1",
+    "bootstrap": "^4.3.1",
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "material-components-web": "^0.44.0",
